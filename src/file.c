@@ -10,7 +10,6 @@
 
 int create_db_file(char *filename) {
     int fd = open(filename, O_RDONLY);
-    printf("%d %s\n", fd, filename);
     if(fd != -1) {
         close(fd);
         printf("File already exists\n");
