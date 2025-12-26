@@ -60,12 +60,19 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
+        if(validate_db_header(dbfd, &dbhdr) == STATUS_ERROR) {
+            printf("Failed to validate database header\n");
+            return -1;
+        }
+
         // CONTINUE: create validate database function 
-        // at 09:09 of https://lowlevel.academy/player/1
+        // at 15:40 of https://lowlevel.academy/player/1
     }
 
     printf("Newfile: %d\n", newfile);
     printf("Filepath: %s\n", filepath);
+
+    output_file(dbfd, dbhdr);
 
     return 0;
 }
