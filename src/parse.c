@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #include "common.h"
 #include  "parse.h"
@@ -76,7 +77,54 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
     return STATUS_SUCCESS;
 }
 
-int output_file(int fd, struct dbheader_t *dbhdr) {
+int read_employees(int fd, struct dbheader_t *dbheader, struct employee_t **employeesOut) {
+    if(fd < 0) {
+        printf("Got a bad FD from the user\n");
+        return STATUS_ERROR;
+    }
+
+    int count = dbheader->count;
+
+    // allocate memory for employee
+    struct employee_t *employees = (struct employee_t *) calloc(count, sizeof(struct employee_t));
+    if(employees == NULL) {
+        printf("Malloc failed\n");
+        return STATUS_ERROR;
+    }
+
+    read(fd, employees, count*sizeof(struct employee_t));
+
+    for(int i; i < count; i++) {
+        employees[i].hours = ntohl(employees[i].hours);
+    }
+
+    *employeesOut = employees;
+    return STATUS_SUCCESS;
+}
+
+int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
+    printf("%s\n", addstring);
+
+    char *name = strtok(addstring, ",");
+    char *addr = strtok(NULL, ",");
+    char *hours = strtok(NULL, ",");
+
+    if(name == NULL || addr == NULL || hours == NULL) {
+        printf("Failed to parse text");
+        return STATUS_ERROR;
+    }
+
+    printf("%s %s %s\n", name, addr, hours);
+
+    strncpy(employees[dbhdr->count-1].name, name, sizeof(employees[dbhdr->count-1].name));
+    strncpy(employees[dbhdr->count-1].address, addr, sizeof(employees[dbhdr->count-1].address));
+
+    employees[dbhdr->count-1].hours = atoi(hours);
+
+    return STATUS_SUCCESS;
+}
+
+int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employee) {
     if(fd < 0) {
         printf("Got a bad FD from the user\n");
         return STATUS_ERROR;
@@ -100,6 +148,11 @@ int output_file(int fd, struct dbheader_t *dbhdr) {
     lseek(fd, SEEK_SET, SEEK_END);
 
     write(fd, dbhdr, sizeof(struct dbheader_t));
+
+    for(int i = 0; i < dbhdr->count; i++) {
+        employee[i].hours = htonl(employee[i].hours); // hours is int which is different upon system.
+        write(fd, &employee[i], sizeof(struct employee_t));
+    }
 
     return STATUS_SUCCESS;
 }
