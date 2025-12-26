@@ -9,9 +9,9 @@
 #include  "parse.h"
 
 int create_db_header(int fd, struct dbheader_t **headerOut) {
-    struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
+    struct dbheader_t *header = (struct dbheader_t *) calloc(1, sizeof(struct dbheader_t));
 
-    if(header == -1) {
+    if(header == NULL) {
         printf("Malloc failed to create db header\n");
         return STATUS_ERROR;
     }
@@ -32,8 +32,8 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
         return STATUS_ERROR;
     }
 
-    struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
-    if(header == -1) {
+    struct dbheader_t *header = (struct dbheader_t *) calloc(1, sizeof(struct dbheader_t));
+    if(header == NULL) {
         printf("Malloc failed create a db header\n");
         return STATUS_ERROR;
     }
@@ -71,6 +71,8 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
     }
 
     *headerOut = header;
+
+    return STATUS_SUCCESS;
 }
 
 int output_file(int fd, struct dbheader_t *dbhdr) {
