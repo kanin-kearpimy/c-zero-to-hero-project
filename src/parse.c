@@ -54,13 +54,13 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
     if(header->version != 1) {
         printf("Improper header version\n");
         free(header);
-        return -1;
+        return STATUS_ERROR;
     }
 
     if(header->magic != HEADER_MAGIC) {
         printf("Improper header magic\n");
         free(header);
-        return -1;
+        return STATUS_ERROR;
     }
 
     struct stat dbstat = {0};
@@ -69,7 +69,7 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
     if(header->filesize != dbstat.st_size) {
         printf("Improper size of file\n");
         free(header);
-        return -1;
+        return STATUS_ERROR;
     }
 
     *headerOut = header;
@@ -130,9 +130,13 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employee) {
         return STATUS_ERROR;
     }
 
+    int realcount = dbhdr->count;
+
     dbhdr->magic = htonl(dbhdr->magic);
-    dbhdr->filesize = htonl(dbhdr->filesize);
-    dbhdr->count = htons(dbhdr->filesize);
+    dbhdr->filesize = htonl(
+        sizeof(struct dbheader_t) + (sizeof(struct employee_t) * realcount)
+    );
+    dbhdr->count = htons(dbhdr->count);
     dbhdr->version = htons(dbhdr->version);
 
     // The file descriptor might have been used before. 
@@ -145,11 +149,11 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employee) {
     // and you want to update just the header at the beginning without touching the rest. Then you need lseek(fd, 0, SEEK_SET) to position there.
     // In the specific context of your code: if fd is freshly opened just for this function call, then yes, lseek is unnecessary. 
     // But if it's a reused file descriptor or you're being defensive about file position, it's good practice.
-    lseek(fd, SEEK_SET, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
 
     write(fd, dbhdr, sizeof(struct dbheader_t));
 
-    for(int i = 0; i < dbhdr->count; i++) {
+    for(int i = 0; i < realcount; i++) {
         employee[i].hours = htonl(employee[i].hours); // hours is int which is different upon system.
         write(fd, &employee[i], sizeof(struct employee_t));
     }

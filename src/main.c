@@ -72,8 +72,7 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
-        // CONTINUE: create validate database function 
-        // at 15:40 of https://lowlevel.academy/player/1
+        // CONTINUE: Adding Employees to Our Database at 20:16
     }
 
     // printf("Newfile: %d\n", newfile);
