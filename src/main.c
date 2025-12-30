@@ -11,6 +11,9 @@ void print_usage(char *argv[]) {
     printf("Usage: %s -n -f <database file>\n", argv[0]);
     printf("\t -n - create new database file\n");
     printf("\t -f - (required) path to database file\n");
+    printf("\t -l - list employee\n");
+    printf("\t -r [string] - remove employee by name");
+    printf("\t -u [string] - update employee by name");
     printf("\t -a [string] - add new employee to database\n");
     return;
 }
@@ -19,13 +22,16 @@ int main(int argc, char *argv[]) {
     char *filepath = NULL;
     char *addstring = NULL;
     bool newfile = false;
+    bool list = false;
+    bool isRemove = false;
+    char *nameToRemove = NULL;
     int c;
 
     int dbfd = -1;
     struct dbheader_t *dbhdr = NULL;
     struct employee_t *employees = NULL;
 
-    while ((c = getopt(argc, argv, "nf:a:")) != -1) {
+    while ((c = getopt(argc, argv, "nf:a:lr:")) != -1) {
         switch(c) {
             case 'n':
                 newfile = true;
@@ -35,6 +41,13 @@ int main(int argc, char *argv[]) {
                 break;
             case 'a':
                 addstring = optarg;
+                break;
+            case 'l':
+                list = true;
+                break;
+            case 'r':
+                isRemove = true;
+                nameToRemove = optarg;
                 break;
             case '?':
                 printf("Unknown option -%c\n", c);
@@ -84,9 +97,15 @@ int main(int argc, char *argv[]) {
     };
 
     if(addstring) {
-        dbhdr->count++;
-        employees = realloc(employees, dbhdr->count * sizeof(struct employee_t));
-        add_employee(dbhdr, employees, addstring);
+        add_employee(dbhdr, &employees, addstring);
+    }
+
+    if(list) {
+        list_employees(dbhdr, employees);
+    }
+
+    if(isRemove) {
+        remove_employee(dbhdr, &employees, nameToRemove);
     }
 
     output_file(dbfd, dbhdr, employees);

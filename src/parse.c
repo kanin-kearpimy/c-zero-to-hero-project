@@ -28,6 +28,15 @@ int create_db_header(struct dbheader_t **headerOut) {
     return STATUS_SUCCESS;
 }
 
+void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
+    for(int i = 0; i < dbhdr->count; i++) {
+        printf("=== Employee ID: %d ===\n", i);
+        printf("Employee Name %s\n", employees[i].name);
+        printf("Employee Address %s\n", employees[i].address);
+        printf("Employee Hour %d\n", employees[i].hours);
+    }
+}
+
 int validate_db_header(int fd, struct dbheader_t **headerOut) {
     if(fd < 0) {
         printf("Got a bad FD from the user\n");
@@ -102,12 +111,27 @@ int read_employees(int fd, struct dbheader_t *dbheader, struct employee_t **empl
     return STATUS_SUCCESS;
 }
 
-int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
-    printf("%s\n", addstring);
+int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) {
+    
+    if(NULL == dbhdr) return STATUS_ERROR;
+    if(NULL == employees) return STATUS_ERROR;
+    if(NULL == *employees) return STATUS_ERROR;
+    if(NULL == addstring) return STATUS_ERROR;
 
     char *name = strtok(addstring, ",");
+    if(name == NULL) return STATUS_ERROR;
     char *addr = strtok(NULL, ",");
+    if(addr == NULL) return STATUS_ERROR;
     char *hours = strtok(NULL, ",");
+    if(hours == NULL) return STATUS_ERROR;
+
+    struct employee_t *e = *employees;
+    e = realloc(e, sizeof(struct employee_t) * (dbhdr->count+1));
+    if(e == NULL) {
+        return STATUS_ERROR;
+    }
+
+    dbhdr->count++;
 
     if(name == NULL || addr == NULL || hours == NULL) {
         printf("Failed to parse text");
@@ -116,10 +140,40 @@ int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *a
 
     printf("%s %s %s\n", name, addr, hours);
 
-    strncpy(employees[dbhdr->count-1].name, name, sizeof(employees[dbhdr->count-1].name));
-    strncpy(employees[dbhdr->count-1].address, addr, sizeof(employees[dbhdr->count-1].address));
+    strncpy(e[dbhdr->count-1].name, name, sizeof(e[dbhdr->count-1].name)-1);
+    strncpy(e[dbhdr->count-1].address, addr, sizeof(e[dbhdr->count-1].address)-1);
+    e[dbhdr->count-1].hours = atoi(hours);
 
-    employees[dbhdr->count-1].hours = atoi(hours);
+    *employees = e;
+
+    return STATUS_SUCCESS;
+}
+
+int remove_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *nameToRemove) {
+    struct employee_t *e = *employees;
+    // finding matching name
+    if(dbhdr->count <= 0) {
+        printf("No employee to remove.");
+        return STATUS_ERROR;
+    }
+
+    for(int i = 0; i < dbhdr->count; i++) {
+        // TODO: I can remove element but it's not writable to the file.
+        if(strcmp(nameToRemove, e[i].name) == 0) {
+            printf("Found!\n");
+            // shifting element;
+            for(int j = i; j < dbhdr->count-1; j++) {
+                e[j] = e[j+1];
+            }
+            
+            dbhdr->count--;
+            // re-allocate memory
+            e = realloc(e, sizeof(struct employee_t) * dbhdr->count);
+            
+            *employees = e;
+            break;
+        }
+    }
 
     return STATUS_SUCCESS;
 }
@@ -131,6 +185,8 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employee) {
     }
 
     int realcount = dbhdr->count;
+
+    printf("real count: %d", realcount);
 
     dbhdr->magic = htonl(dbhdr->magic);
     dbhdr->filesize = htonl(
@@ -157,6 +213,8 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employee) {
         employee[i].hours = htonl(employee[i].hours); // hours is int which is different upon system.
         write(fd, &employee[i], sizeof(struct employee_t));
     }
+
+    ftruncate(fd, sizeof(struct dbheader_t) + (sizeof(struct employee_t) * realcount));
 
     return STATUS_SUCCESS;
 }
