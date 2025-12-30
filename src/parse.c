@@ -158,7 +158,6 @@ int remove_employee(struct dbheader_t *dbhdr, struct employee_t **employees, cha
     }
 
     for(int i = 0; i < dbhdr->count; i++) {
-        // TODO: I can remove element but it's not writable to the file.
         if(strcmp(nameToRemove, e[i].name) == 0) {
             printf("Found!\n");
             // shifting element;
@@ -174,6 +173,30 @@ int remove_employee(struct dbheader_t *dbhdr, struct employee_t **employees, cha
             break;
         }
     }
+
+    return STATUS_SUCCESS;
+}
+
+int update_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *nameToUpdate, char *dataToUpdate) {
+    struct employee_t *e = *employees;
+    for(int i = 0; i < dbhdr->count; i++) {
+        if(strcmp(nameToUpdate, e[i].name) == 0) {
+            printf("Found!\n");
+            // shifting element;
+            char *name = strtok(dataToUpdate, ",");
+            if(name == NULL) return STATUS_ERROR;
+            char *addr = strtok(NULL, ",");
+            if(addr == NULL) return STATUS_ERROR;
+            char *hours = strtok(NULL, ",");
+            if(hours == NULL) return STATUS_ERROR;
+            strncpy(e[dbhdr->count-1].name, name, sizeof(e[dbhdr->count-1].name)-1);
+            strncpy(e[dbhdr->count-1].address, addr, sizeof(e[dbhdr->count-1].address)-1);
+            e[dbhdr->count-1].hours = atoi(hours);
+            break;
+        }
+    }
+
+    *employees = e;
 
     return STATUS_SUCCESS;
 }

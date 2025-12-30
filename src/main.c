@@ -25,13 +25,16 @@ int main(int argc, char *argv[]) {
     bool list = false;
     bool isRemove = false;
     char *nameToRemove = NULL;
+    bool isUpdate = false;
+    char *nameToUpdate = NULL;
+    char *dataToUpdate = NULL;
     int c;
 
     int dbfd = -1;
     struct dbheader_t *dbhdr = NULL;
     struct employee_t *employees = NULL;
 
-    while ((c = getopt(argc, argv, "nf:a:lr:")) != -1) {
+    while ((c = getopt(argc, argv, "nf:a:lru:")) != -1) {
         switch(c) {
             case 'n':
                 newfile = true;
@@ -48,6 +51,11 @@ int main(int argc, char *argv[]) {
             case 'r':
                 isRemove = true;
                 nameToRemove = optarg;
+                break;
+            case 'u':
+                isUpdate = true;
+                nameToUpdate = optarg;
+                dataToUpdate = argv[optind++];
                 break;
             case '?':
                 printf("Unknown option -%c\n", c);
@@ -106,6 +114,10 @@ int main(int argc, char *argv[]) {
 
     if(isRemove) {
         remove_employee(dbhdr, &employees, nameToRemove);
+    }
+
+    if(isUpdate) {
+        update_employee(dbhdr, &employees, nameToUpdate, dataToUpdate);
     }
 
     output_file(dbfd, dbhdr, employees);
